@@ -241,11 +241,16 @@ function App() {
   return (
     <div className="fixed inset-0 w-screen h-screen bg-black text-foreground dark">
       {/* Background patterns */}
-      <div className="fixed -inset-[100px] w-[calc(100vw+200px)] h-[calc(100vh+200px)] bg-[linear-gradient(45deg,transparent_25%,rgba(148,163,184,0.05)_25%,rgba(148,163,184,0.05)_50%,transparent_50%,transparent_75%,rgba(148,163,184,0.05)_75%)] bg-[length:128px_128px] rotate-12 blur-[0.5px]" />
+      <div className="fixed -inset-[200px] w-[calc(100vw+400px)] h-[calc(100vh+400px)] bg-[linear-gradient(45deg,transparent_25%,rgba(148,163,184,0.05)_25%,rgba(148,163,184,0.05)_50%,transparent_50%,transparent_75%,rgba(148,163,184,0.05)_75%)] bg-[length:128px_128px] rotate-12 blur-[0.5px]" />
 
       {/* Gradient accents */}
       <div className="fixed -inset-1/4 w-[150vw] h-[150vh] bg-slate-900/30 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
       <div className="fixed -inset-1/4 w-[150vw] h-[150vh] bg-slate-900/30 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2" />
+
+      {/* Signature */}
+      <div className="fixed bottom-4 right-4 text-sm text-slate-500/50 font-medium">
+        made by palhari
+      </div>
 
       <div className="absolute inset-0 flex flex-col items-center p-6">
         <h1 className="text-4xl font-bold mb-8 text-white tracking-tight">
