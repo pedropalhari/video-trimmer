@@ -40,6 +40,9 @@ function App() {
   const [processingModalOpen, setProcessingModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const totalDurationRef = useRef(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isDropping, setIsDropping] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
   useEffect(() => {
     load();
@@ -101,15 +104,26 @@ function App() {
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    setIsDragging(false);
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith("video/")) {
-      setVideo(file);
-      setVideoUrl(URL.createObjectURL(file));
+      setIsDropping(true);
+      setTimeout(() => {
+        setVideo(file);
+        setVideoUrl(URL.createObjectURL(file));
+        setTimeout(() => setIsDropping(false), 50);
+      }, 300);
     }
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
   };
 
   const cancelProcessing = () => {
@@ -237,151 +251,178 @@ function App() {
         <h1 className="text-4xl font-bold mb-8 text-white tracking-tight">
           Video Trimmer
         </h1>
-        <Card className="max-w-4xl w-full backdrop-blur-sm bg-black/50 shadow-2xl border-white/10 relative max-h-[90vh] overflow-auto">
-          {/* Card inner glow */}
+        <Card className="max-w-4xl w-full backdrop-blur-sm bg-black/50 shadow-2xl border-white/10 relative">
           <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-slate-500/5 to-transparent pointer-events-none" />
 
-          <div className="p-6 space-y-6 relative">
-            {!video ? (
+          <div className="p-6 relative">
+            <div 
+              className="relative transition-[height] duration-300 ease-in-out" 
+              style={{ height: video ? '690px' : '480px' }}
+            >
               <div
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                className="relative w-full aspect-video border-2 border-dashed border-muted-foreground/25 rounded-lg overflow-hidden transition-colors hover:border-muted-foreground/50 group"
+                className={`absolute inset-0 transition-all duration-300 ease-in-out ${
+                  isDropping || isClearing ? "scale-95 opacity-0" : "scale-100 opacity-100"
+                }`}
               >
-                <div className="absolute inset-0 bg-slate-800/20 transition-colors group-hover:bg-slate-800/30" />
-                <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4">
-                  <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center">
-                    <svg 
-                      className="w-8 h-8 text-slate-400" 
-                      fill="none" 
-                      viewBox="0 0 24 24" 
-                      stroke="currentColor"
-                    >
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth={2} 
-                        d="M7 4v16M17 4v16M3 8h18M3 16h18" 
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-lg font-medium">
-                      Drag and drop your video here
-                    </p>
-                    <p className="text-muted-foreground/70 text-sm text-center mt-1">
-                      MP4, WebM, and other video formats
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="relative">
-                  <video
-                    ref={videoRef}
-                    src={videoUrl}
-                    controls
-                    className="w-full rounded-lg bg-muted/50 shadow-lg"
-                    onTimeUpdate={handleTimeUpdate}
-                    onLoadedMetadata={handleLoadedMetadata}
-                    onEnded={() => isPreviewing && startPreview()}
-                  />
-                  {isPreviewing && (
-                    <div className="absolute top-4 right-4 bg-black/80 text-white px-3 py-1 rounded-full text-sm">
-                      Preview Mode
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between mb-8">
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Start Time
-                      </p>
-                      <Input
-                        value={formatTime((trimValues[0] / 100) * duration)}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                          handleTimeInputChange(0, e.target.value)
-                        }
-                        className="w-44 text-lg font-medium"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-muted-foreground">
-                        End Time
-                      </p>
-                      <Input
-                        value={formatTime((trimValues[1] / 100) * duration)}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                          handleTimeInputChange(1, e.target.value)
-                        }
-                        className="w-44 text-lg font-medium"
-                      />
-                    </div>
-                  </div>
-                  <div className="relative">
-                    <div className="absolute inset-0 h-8 bg-slate-800/50 rounded-full">
-                      <div
-                        className="absolute h-8 bg-slate-600 rounded-full"
-                        style={{
-                          left: `${trimValues[0]}%`,
-                          width: `${trimValues[1] - trimValues[0]}%`,
-                        }}
-                      />
-                    </div>
-                    <Slider
-                      defaultValue={[0, 100]}
-                      max={100}
-                      step={0.1}
-                      value={trimValues}
-                      onValueChange={(newValues) => {
-                        setTrimValues(newValues);
-                        if (videoRef.current && !isPreviewing) {
-                          const startTime = (newValues[0] / 100) * duration;
-                          videoRef.current.currentTime = startTime;
-                        }
-                      }}
-                      className="relative z-10"
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-between items-center">
-                  <Button
-                    variant="outline"
-                    onClick={isPreviewing ? stopPreview : startPreview}
-                    className="bg-slate-800/50 hover:bg-slate-700/50"
+                {!video ? (
+                  <div
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    className={`h-full relative w-full aspect-video border-2 border-dashed rounded-lg overflow-hidden transition-all duration-300 ease-in-out ${
+                      isDragging
+                        ? "border-white scale-[1.02] bg-slate-800/40"
+                        : "border-muted-foreground/25 hover:border-muted-foreground/50 group"
+                    }`}
                   >
-                    {isPreviewing ? "Stop Preview" : "Preview Trim"}
-                  </Button>
-
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        stopPreview();
-                        setVideo(null);
-                        setVideoUrl("");
-                        setTrimValues([0, 100]);
-                      }}
-                    >
-                      Clear
-                    </Button>
-                    <Button
-                      onClick={trimVideo}
-                      disabled={loading || !ffmpegLoaded}
-                      className="bg-slate-700 hover:bg-slate-600"
-                    >
-                      {loading
-                        ? "Processing..."
-                        : !ffmpegLoaded
-                        ? "Loading FFmpeg..."
-                        : "Trim Video"}
-                    </Button>
+                    <div className={`absolute inset-0 transition-colors duration-300 ${
+                      isDragging ? "bg-slate-800/40" : "bg-slate-800/20 group-hover:bg-slate-800/30"
+                    }`} />
+                    <div className={`absolute inset-0 flex flex-col items-center justify-center space-y-4 transition-transform duration-300 ${
+                      isDragging ? "scale-110" : "scale-100"
+                    }`}>
+                      <div className={`w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center transition-transform duration-300 ${
+                        isDragging ? "scale-110" : "scale-100"
+                      }`}>
+                        <svg 
+                          className="w-8 h-8 text-slate-400" 
+                          fill="none" 
+                          viewBox="0 0 24 24" 
+                          stroke="currentColor"
+                        >
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            strokeWidth={2} 
+                            d="M7 4v16M17 4v16M3 8h18M3 16h18" 
+                          />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground text-lg font-medium">
+                          {isDragging ? "Release to Upload" : "Drag and drop your video here"}
+                        </p>
+                        <p className="text-muted-foreground/70 text-sm text-center mt-1">
+                          MP4, WebM, and other video formats
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="h-full flex flex-col">
+                    <div className="space-y-6">
+                      <div className="relative aspect-video">
+                        <video
+                          ref={videoRef}
+                          src={videoUrl}
+                          controls
+                          className="w-full h-full rounded-lg bg-muted/50 shadow-lg"
+                          onTimeUpdate={handleTimeUpdate}
+                          onLoadedMetadata={handleLoadedMetadata}
+                          onEnded={() => isPreviewing && startPreview()}
+                        />
+                        {isPreviewing && (
+                          <div className="absolute top-4 right-4 bg-black/80 text-white px-3 py-1 rounded-full text-sm">
+                            Preview Mode
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between mb-8">
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium text-muted-foreground">
+                              Start Time
+                            </p>
+                            <Input
+                              value={formatTime((trimValues[0] / 100) * duration)}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                handleTimeInputChange(0, e.target.value)
+                              }
+                              className="w-44 text-lg font-medium"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium text-muted-foreground">
+                              End Time
+                            </p>
+                            <Input
+                              value={formatTime((trimValues[1] / 100) * duration)}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                handleTimeInputChange(1, e.target.value)
+                              }
+                              className="w-44 text-lg font-medium"
+                            />
+                          </div>
+                        </div>
+                        <div className="relative">
+                          <div className="absolute inset-0 h-8 bg-slate-800/50 rounded-full">
+                            <div
+                              className="absolute h-8 bg-slate-600 rounded-full"
+                              style={{
+                                left: `${trimValues[0]}%`,
+                                width: `${trimValues[1] - trimValues[0]}%`,
+                              }}
+                            />
+                          </div>
+                          <Slider
+                            defaultValue={[0, 100]}
+                            max={100}
+                            step={0.1}
+                            value={trimValues}
+                            onValueChange={(newValues) => {
+                              setTrimValues(newValues);
+                              if (videoRef.current && !isPreviewing) {
+                                const startTime = (newValues[0] / 100) * duration;
+                                videoRef.current.currentTime = startTime;
+                              }
+                            }}
+                            className="relative z-10"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <Button
+                          variant="outline"
+                          onClick={isPreviewing ? stopPreview : startPreview}
+                          className="bg-slate-800/50 hover:bg-slate-700/50"
+                        >
+                          {isPreviewing ? "Stop Preview" : "Preview Trim"}
+                        </Button>
+
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              stopPreview();
+                              setIsClearing(true);
+                              setTimeout(() => {
+                                setVideo(null);
+                                setVideoUrl("");
+                                setTrimValues([0, 100]);
+                                setTimeout(() => setIsClearing(false), 50);
+                              }, 300);
+                            }}
+                          >
+                            Clear
+                          </Button>
+                          <Button
+                            onClick={trimVideo}
+                            disabled={loading || !ffmpegLoaded}
+                            className="bg-slate-700 hover:bg-slate-600"
+                          >
+                            {loading
+                              ? "Processing..."
+                              : !ffmpegLoaded
+                              ? "Loading FFmpeg..."
+                              : "Trim Video"}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         </Card>
       </div>
